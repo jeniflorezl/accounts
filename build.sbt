@@ -1,17 +1,15 @@
-name := """accounts"""
-organization := "accounts"
 
+name := "accounts"
+organization := "com.banking"
 version := "1.0-SNAPSHOT"
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
+lazy val root = (project in file("."))
+  .enablePlugins(PlayScala)
 
 scalaVersion := "2.13.1"
 
-libraryDependencies += guice
-libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test
-
-// Adds additional packages into Twirl
-//TwirlKeys.templateImports += "accounts.controllers._"
-
-// Adds additional packages into conf/routes
-// play.sbt.routes.RoutesKeys.routesImport += "accounts.binders._"
+libraryDependencies ++= Seq(
+  guice,
+  "org.scalatestplus.play"  %% "scalatestplus-play"   % "5.0.0"   % Test,
+  "org.scalacheck"          %% "scalacheck"           % "1.14.0"  % "test"
+)
