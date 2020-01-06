@@ -4,24 +4,36 @@ import domain.model.Account
 import domain.service.AccountService
 import infrastructure.persistence.AccountRepositoryInMemory
 import javax.inject._
+import play.api.Logger
 import play.api.mvc._
 
-import scala.util.{Failure, Success}
-
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.{ Failure, Success }
 
 @Singleton
-class AccountController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
+class AccountController @Inject() ( val controllerComponents: ControllerComponents ) extends BaseController {
 
+  private val logger = Logger( this.getClass )
   private val accountRepository = new AccountRepositoryInMemory()
 
-  def saveAccount() = Action { implicit request: Request[AnyContent] =>
+  def saveAccount(): Action[AnyContent] = Action.async {
 
-    val account = Account("1234", 1000000000)
+    implicit request: Request[AnyContent] =>
 
-    AccountService.saveAccount(account, accountRepository) match {
-      case Success(acc) => Ok( s"Account saved successfully" )
-      case Failure(ex) => InternalServerError(s"Account fail " + ex.getMessage)
-    }
+      val account = Account( "1234", 1000000000 )
+      val result: Future[Account] = AccountService.saveAccount( account, accountRepository )
+
+      result
+        .map { account =>
+          Ok( s"Account no ${account.no} saved successfully" )
+        }
+        .recoverWith {
+          case ex: Exception =>
+            logger.error( s"Error saving account no ${account.no}", ex )
+            Future.successful( InternalServerError( s"Error saving account no ${account.no}. ${ex.getMessage}" ) )
+        }
 
   }
+
 }

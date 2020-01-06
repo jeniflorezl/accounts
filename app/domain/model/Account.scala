@@ -1,9 +1,6 @@
 package domain.model
 
-case class Account(no: String, balance: Double)
-
-
-
+case class Account( no: String, balance: Double )
 
 object Account {
 
