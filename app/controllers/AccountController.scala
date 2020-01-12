@@ -21,19 +21,30 @@ class AccountController @Inject() ( val controllerComponents: ControllerComponen
 
     implicit request: Request[AnyContent] =>
 
-      val account = Account( "1234", 1000000000 )
-      val result: Future[Account] = AccountService.saveAccount( account, accountRepository )
+      createAccount( "1234A", 1000000000 )
+        .flatMap( accountEither => accountEither.fold(
+          left => {
+            logger.error( left )
+            Future.successful( InternalServerError( s"Error saving account" ) )
+          },
+          account => {
+            val result: Future[Account] = AccountService.saveAccount( account, accountRepository )
 
-      result
-        .map { account =>
-          Ok( s"Account no ${account.no} saved successfully" )
-        }
-        .recoverWith {
-          case ex: Exception =>
-            logger.error( s"Error saving account no ${account.no}", ex )
-            Future.successful( InternalServerError( s"Error saving account no ${account.no}. ${ex.getMessage}" ) )
-        }
+            result
+              .map { account =>
+                Ok( s"Account no ${account.no} saved successfully" )
+              }
+              .recoverWith {
+                case ex: Exception =>
+                  logger.error( s"Error saving account", ex )
+                  Future.successful( InternalServerError( s"Error saving account. ${ex.getMessage}" ) )
+              }
+          }
+        ) )
+  }
 
+  private[this] def createAccount( no: String, balance: Double ): Future[Either[String, Account]] = {
+    Future { Account.account( no, balance ) }
   }
 
 }
