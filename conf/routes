@@ -1,3 +1,3 @@
 
-GET     /                           controllers.HomeController.index
-GET     /saveAccount                           controllers.AccountController.saveAccount()
+GET     /                                                controllers.HomeController.index
+POST    /saveAccount/                                   controllers.AccountController.saveAccount()

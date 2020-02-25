@@ -1,25 +1,55 @@
 package domain.model
 
-import scala.util.Try
+import domain.model.ValidateAccounts._
+import org.joda.time.DateTime
 
-case class Account( no: String, balance: Double )
+trait Account {
+  val no: String
+  val dateOfOpen: DateTime
+  val dateOfClose: Option[DateTime]
+  val balance: Double
+  val status: Status
+}
+
+case class SavingAccount( no: String, dateOfOpen: DateTime, dateOfClose: Option[DateTime], balance: Double,
+                          status: Status, rateOfInterest: Double ) extends Account
+
+case class CheckingAccount( no: String, dateOfOpen: DateTime, dateOfClose: Option[DateTime], balance: Double,
+                            status: Status ) extends Account
 
 object Account {
 
-  def account( no: String, balance: Double ): Either[String, Account] = {
-    if ( isValidNo( no ) && isValidBalance( balance ) ) {
-      Right( new Account( no, balance ) )
-    } else {
-      Left( s"Ocurrió un error al crear la cuenta con el número ${no} y el balance ${balance}" )
-    }
+  def savingAccount( no: String, dateOfOpen: DateTime, balance: Double, status: Status,
+                     rateOfInterest: Double ): Either[String, SavingAccount] = {
+
+    for {
+      no <- isValidNoAccount( no )
+      rateOfInterest <- isValidRateOfInteres( rateOfInterest )
+    } yield SavingAccount( completeNo( no ), dateOfOpenAccount( dateOfOpen ), Option.empty, validBalance( balance ),
+      Active, rateOfInterest )
   }
 
-  def isValidNo( no: String ): Boolean = {
-    !no.isEmpty && Try( no.toInt ).isSuccess
+  def checkingAccount( no: String, dateOfOpen: DateTime, balance: Double, status: Status ): Either[String, CheckingAccount] = {
+
+    isValidNoAccount( no ).fold(
+      error => Left( error ),
+      no => Right( CheckingAccount( no, dateOfOpen, Option.empty, validBalance( balance ), Active ) )
+    )
   }
 
-  def isValidBalance( balance: Double ): Boolean = {
-    balance >= 0
+  def completeNo( no: String ): String = {
+    val lenghtNoAccount = 11
+    if ( no.length < lenghtNoAccount ) {
+      s"%0${lenghtNoAccount}d" format no.toInt
+    } else no
   }
 
+  def dateOfOpenAccount( dateOfOpen: DateTime ): DateTime = {
+    Option( dateOfOpen ).getOrElse( DateTime.now() )
+  }
+
+  def validBalance( balance: Double ): Double = {
+    if ( balance >= 0 ) balance else 0
+  }
 }
+

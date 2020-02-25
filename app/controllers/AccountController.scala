@@ -2,14 +2,16 @@ package controllers
 
 import domain.model.Account
 import domain.service.AccountService
+import infrastructure.dto.account.AccountDTO
 import infrastructure.persistence.AccountRepositoryInMemory
 import javax.inject._
+import org.joda.time.DateTime
 import play.api.Logger
+import play.api.libs.json.JsValue
 import play.api.mvc._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{ Failure, Success }
 
 @Singleton
 class AccountController @Inject() ( val controllerComponents: ControllerComponents ) extends BaseController {
@@ -21,11 +23,13 @@ class AccountController @Inject() ( val controllerComponents: ControllerComponen
 
     implicit request: Request[AnyContent] =>
 
-      createAccount( "1234A", 1000000000 )
+      println( request.body.asJson )
+
+      createAccount( trasform( request.body.asJson ) )
         .flatMap( accountEither => accountEither.fold(
           left => {
             logger.error( left )
-            Future.successful( InternalServerError( s"Error saving account" ) )
+            Future.successful( InternalServerError( left ) )
           },
           account => {
             val result: Future[Account] = AccountService.saveAccount( account, accountRepository )
@@ -43,8 +47,20 @@ class AccountController @Inject() ( val controllerComponents: ControllerComponen
         ) )
   }
 
-  private[this] def createAccount( no: String, balance: Double ): Future[Either[String, Account]] = {
-    Future { Account.account( no, balance ) }
+  private def createAccount( accountDTO: AccountDTO ): Future[Either[String, Account]] = {
+    AccountService.openAccount( accountDTO.no, DateTime.parse( accountDTO.dateOfOpen ),
+      accountDTO.balance, accountDTO.rateOfInterest, accountDTO.typeAccount )
+  }
+
+  private def trasform( json: Option[JsValue] ): AccountDTO = {
+    json.map( jsonValue => {
+      val no = ( jsonValue \ "no" ).as[String]
+      val dateOfOpen = ( jsonValue \ "dateOfOpen" ).as[String]
+      val balance = ( jsonValue \ "balance" ).as[Int]
+      val rateOfInteres = ( jsonValue \ "rateOfInteres" ).as[Int]
+      val typeAccount = ( jsonValue \ "typeAccount" ).as[String]
+      AccountDTO( no, dateOfOpen, balance, rateOfInteres, typeAccount )
+    } ).orNull
   }
 
 }

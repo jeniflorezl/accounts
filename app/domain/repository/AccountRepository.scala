@@ -1,6 +1,7 @@
 package domain.repository
 
 import domain.model.Account
+
 import scala.concurrent.Future
 
 trait AccountRepository {
